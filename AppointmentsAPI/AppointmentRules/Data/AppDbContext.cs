@@ -60,7 +60,8 @@ namespace AppointmentRules.Data
            
             modelBuilder.Entity<Member>()
                 .Property(m => m.ContractType)
-                .HasConversion<int>(); 
+                .HasConversion<int>();
+
         }
     }
 }

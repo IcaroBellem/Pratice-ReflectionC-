@@ -1,2 +1,2 @@
-(timeEntry) => timeEntry.Entry.Hour >= 9 && timeEntry.Entry.Hour <= 12
-(timeEntry) => timeEntry.Member.ContractType == "Internal" ? timeEntry.TotalHours <= 6 : timeEntry.TotalHours <= 12
+(timeEntry.EndTime - timeEntry.StartTime).TotalHours <= 8;
+

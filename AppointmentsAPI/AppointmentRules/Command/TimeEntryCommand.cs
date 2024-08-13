@@ -6,11 +6,11 @@ namespace AppointmentRules.Command
 {
     public class TimeEntryCommand : IRequest<bool>
     {
-        public TimeEntryDTO TimeEntryDTO { get; set; }
+        public TimeEntryResponseDTO TimeEntryResponseDTO { get; set; }
 
-        public TimeEntryCommand(TimeEntryDTO timeEntryDTO)
+        public TimeEntryCommand(TimeEntryResponseDTO timeEntryResponseDTO)
         {
-            TimeEntryDTO = timeEntryDTO;
+            TimeEntryResponseDTO = timeEntryResponseDTO;
         }
     }
 }

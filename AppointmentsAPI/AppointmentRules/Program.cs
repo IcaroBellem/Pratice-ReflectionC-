@@ -1,6 +1,10 @@
 
+using AppointmentRules.Command;
+using AppointmentRules.Command.Handler;
+using AppointmentRules.Command.Query;
 using AppointmentRules.Data;
 using AppointmentRules.Service;
+using AppointmentRules.Service.DTOs;
 using AppointmentRules.Service.Interface;
 using AppointmentRules.Service.Repository;
 using MediatR;
@@ -32,6 +36,8 @@ namespace AppointmentRules
 
             // Add this line to register controller services
             builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 

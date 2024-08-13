@@ -1,22 +1,22 @@
-﻿using AppointmentRules.Data;
+﻿using AppointmentRules.Command;
+using AppointmentRules.Data;
+using AppointmentRules.Models;
 using AppointmentRules.Service.Interface;
 using MediatR;
 
-namespace AppointmentRules.Command.Handler
+public class TimeEntryHandler : IRequestHandler<TimeEntryCommand, bool>
 {
-    public class TimeEntryCommandHandler : IRequestHandler<TimeEntryCommand, bool>
+    private readonly AppDbContext _context;
+    private readonly IRuleService _ruleService;
+
+    public TimeEntryHandler(AppDbContext context, IRuleService ruleService)
     {
-        private readonly IRuleService _ruleService;
-
-        public TimeEntryCommandHandler(IRuleService ruleService, AppDbContext context)
-        {
-            _ruleService = ruleService;
-        }
-
-        public async Task<bool> Handle(TimeEntryCommand request, CancellationToken cancellationToken)
-        {
-            return await _ruleService.MakeTimeEntryAsync(request.TimeEntryDTO);
-        }
+        _context = context;
+        _ruleService = ruleService;
     }
 
+    public async Task<bool> Handle(TimeEntryCommand request, CancellationToken cancellationToken)
+    {
+     return await _ruleService.MakeTimeEntryAsync(request.TimeEntryResponseDTO);
+    }
 }

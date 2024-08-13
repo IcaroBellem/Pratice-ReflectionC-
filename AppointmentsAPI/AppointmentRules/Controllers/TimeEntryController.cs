@@ -17,21 +17,34 @@ namespace AppointmentRules.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> MakeTimeEntryAsync([FromBody] TimeEntryDTO timeEntryDTO)
+        [HttpPost("Create")]
+        public async Task<IActionResult> MakeTimeEntryAsync([FromBody] TimeEntryResponseDTO timeEntryResponseDTO)
         {
-            var command = new TimeEntryCommand(timeEntryDTO);
+            var command = new TimeEntryCommand(timeEntryResponseDTO);
             var result = await _mediator.Send(command);
-            return result ? Ok(result) : BadRequest();
+
+            if (!result)
+            {
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+
+            return Ok("Time entry created successfully.");
         }
 
         [HttpGet("{memberId}")]
         public async Task<IActionResult> GetTimeEntriesByIdAsync(int memberId)
         {
             var query = new GetTimeEntryQuery(memberId);
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var timeEntries = await _mediator.Send(query);
+
+            if (timeEntries == null || !timeEntries.Any())
+            {
+                return NotFound("No time entries found for the specified member.");
+            }
+
+            return Ok(timeEntries);
         }
+
+
     }
-        
 }
