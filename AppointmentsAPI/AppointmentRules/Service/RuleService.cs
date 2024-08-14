@@ -20,110 +20,7 @@ public class RuleService : IRuleService
     {
         _context = context;
     }
-
-    public async Task<List<TimeEntryDTO>> GetTimeEntriesByIdAsync(int memberId)
-    {
-        var timeEntries = await _context.TimeEntries
-            .AsNoTracking()
-            .Where(t => t.MemberId == memberId)
-            .Select(t => new TimeEntryDTO
-            {
-                MemberId = t.MemberId,
-                TaskId = t.TaskId,
-                Entry = t.StartTime,
-                Exit = t.EndTime,
-                IsApproved = t.IsApproved,
-                
-            })
-            .ToListAsync();
-
-
-        return timeEntries;
-    }
-
-    public async Task<TimeEntryDTO> ApplyRulesAsync(TimeEntryDTO timeEntryDto)
-    {
-        var timeEntry = await _context.TimeEntries
-            .Where(te => te.MemberId == timeEntryDto.MemberId && te.TaskId == timeEntryDto.TaskId)
-            .FirstOrDefaultAsync();
-
-        if (timeEntry == null)
-        {
-            timeEntry = new TimeEntry
-            {
-                MemberId = timeEntryDto.MemberId,
-                TaskId = timeEntryDto.TaskId,
-                StartTime = timeEntryDto.Entry,
-                EndTime = timeEntryDto.Exit
-            };
-
-            _context.TimeEntries.Add(timeEntry);
-            await _context.SaveChangesAsync();
-        }
-
-        var rules = await File.ReadAllTextAsync("rules/rules.txt");
-        bool? isApproved = null;
-
-        foreach (var ruleline in rules.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
-        {
-            var rule = ruleline.Trim(); 
-
-            var result = CompileAndExecuteRule(rule, timeEntry);
-            if (result.HasValue)
-            {
-                isApproved = result.Value;
-
-                // Define a mensagem na service
-                if (isApproved.Value)
-                {
-                    timeEntryDto.ApprovalMessage = "Jornada dentro do limite";
-                }
-                else
-                {
-                    timeEntryDto.ApprovalMessage = "Jornada excede o limite diário";
-                }
-
-                break;
-            }
-        }
-
-        timeEntryDto.IsApproved = isApproved;
-        timeEntry.IsApproved = isApproved;
-
-        _context.TimeEntries.Update(timeEntry);
-        await _context.SaveChangesAsync();
-
-        return timeEntryDto;
-    }
-
-    public async Task<bool> MakeTimeEntryAsync(TimeEntryResponseDTO timeEntryResponseDto)
-    {
-        var timeEntry = new TimeEntry
-        {
-            MemberId = timeEntryResponseDto.MemberId,
-            TaskId = timeEntryResponseDto.TaskId,
-            StartTime = timeEntryResponseDto.Entry,
-            EndTime = timeEntryResponseDto.Exit,
-            IsApproved = false
-        };
-
-        _context.TimeEntries.Add(timeEntry);
-        await _context.SaveChangesAsync();
-
-        var timeEntryDto = new TimeEntryDTO
-        {
-            MemberId = timeEntry.MemberId,
-            TaskId = timeEntry.TaskId,
-            Entry = timeEntry.StartTime,
-            Exit = timeEntry.EndTime
-        };
-
-        await ApplyRulesAsync(timeEntryDto);
-
-        return true;
-    }
-
-    private bool? CompileAndExecuteRule(string rule, TimeEntry timeEntry)
+    private bool? CompileAndExecuteRule(string rule, TimeEntry timeEntryComplile)
     {
         if (!_compiledRulesCache.TryGetValue(rule, out var compiledRule))
         {
@@ -147,7 +44,7 @@ public class RuleService : IRuleService
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(TimeEntry).Assembly.Location)
+                MetadataReference.CreateFromFile(typeof(TimeEntryDTO).Assembly.Location)
             };
 
             var compilation = CSharpCompilation.Create(
@@ -172,12 +69,103 @@ public class RuleService : IRuleService
                 var evaluator = Activator.CreateInstance(evaluatorType);
                 var method = evaluatorType.GetMethod("Evaluate");
 
-                compiledRule = (Func<TimeEntry, bool>)Delegate.CreateDelegate(typeof(Func<TimeEntry, bool>), evaluator, method);
+                compiledRule = (Func<TimeEntry, bool>)Delegate.CreateDelegate(typeof(Func<TimeEntryDTO, bool>), evaluator, method);
                 _compiledRulesCache.TryAdd(rule, compiledRule);
             }
         }
-        return compiledRule(timeEntry);
+        return compiledRule(timeEntryComplile);
     }
+
+    public async Task<List<TimeEntryDTO>> GetTimeEntriesByIdAsync(int memberId)
+    {
+        var timeEntries = await _context.TimeEntries
+            .AsNoTracking()
+            .Where(t => t.MemberId == memberId)
+            .Select(t => new TimeEntryDTO
+            {
+                MemberId = t.MemberId,
+                TaskId = t.TaskId,
+                Entry = t.StartTime,
+                Exit = t.EndTime,
+                IsApproved = t.IsApproved,
+                
+            })
+            .ToListAsync();
+
+        return timeEntries;
+    }
+
+    public async Task<TimeEntryDTO> ApplyRulesAsync(TimeEntryDTO timeEntryDto)
+    {
+        var timeEntry = new TimeEntry
+        {
+            MemberId = timeEntryDto.MemberId,
+            TaskId = timeEntryDto.TaskId,
+            StartTime = timeEntryDto.Entry,
+            EndTime = timeEntryDto.Exit,
+            IsApproved = timeEntryDto.IsApproved,
+        };
+
+        var rules = await File.ReadAllTextAsync("rules/rules.txt");
+
+        foreach (var ruleline in rules.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var rule = ruleline.Trim(); 
+
+            var result = CompileAndExecuteRule(rule, timeEntry);
+            if (result.HasValue)
+            {
+                timeEntry.IsApproved = result.Value;
+
+                if(timeEntry.IsApproved == null)
+                {
+                    timeEntryDto.ApprovalMessage = "Not Approved";
+                }
+                else
+                {
+                    timeEntryDto.ApprovalMessage = "Approved";
+                }
+                break;
+            }
+        }
+        _context.TimeEntries.Update(timeEntry);
+        await _context.SaveChangesAsync();
+
+        return timeEntryDto;
+    }
+
+    public async Task<bool> MakeTimeEntryAsync(TimeEntryResponseDTO timeEntryResponseDto)
+    {
+        if (timeEntryResponseDto == null)
+        {
+            return false;
+        }
+
+        var timeEntry = new TimeEntry
+        {
+            MemberId = timeEntryResponseDto.MemberId,
+            TaskId = timeEntryResponseDto.TaskId,
+            StartTime = timeEntryResponseDto.Entry,
+            EndTime = timeEntryResponseDto.Exit,
+        };
+
+        _context.TimeEntries.Add(timeEntry);
+
+        var timeEntryDto = new TimeEntryDTO
+        {
+            MemberId = timeEntry.MemberId,
+            TaskId = timeEntry.TaskId,
+            Entry = timeEntry.StartTime,
+            Exit = timeEntry.EndTime,
+            IsApproved = timeEntry.IsApproved,
+        };
+
+        await ApplyRulesAsync(timeEntryDto);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
 }
 
 

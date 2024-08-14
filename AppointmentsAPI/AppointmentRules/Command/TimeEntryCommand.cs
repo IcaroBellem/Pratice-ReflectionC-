@@ -4,13 +4,12 @@ using MediatR;
 
 namespace AppointmentRules.Command
 {
-    public class TimeEntryCommand : IRequest<bool>
-    {
-        public TimeEntryResponseDTO TimeEntryResponseDTO { get; set; }
+    public class TimeEntryCommand : IRequest<bool> {
 
         public TimeEntryCommand(TimeEntryResponseDTO timeEntryResponseDTO)
         {
             TimeEntryResponseDTO = timeEntryResponseDTO;
         }
-    }
+        public TimeEntryResponseDTO TimeEntryResponseDTO { get; set; }
+    }        
 }

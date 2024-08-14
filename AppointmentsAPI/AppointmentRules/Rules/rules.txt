@@ -1,2 +1,6 @@
-(timeEntry.EndTime - timeEntry.StartTime).TotalHours <= 8;
+        "timeEntry => timeEntry.Date == DateTime.Now.AddDays(-7)",
+        "timeEntry => timeEntry.StartTime == timeEntry.EndTime",
+        "timeEntry => timeEntry.StartTime < timeEntry.EndTime",
+        "timeEntry => timeEntry.TaskId == 1,
+        "timeEntry => timeEntry.EndTime - timeEntry.StartTime).TotalHours == 8",
 

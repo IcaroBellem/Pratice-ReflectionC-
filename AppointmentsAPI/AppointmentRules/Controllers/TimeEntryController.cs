@@ -18,9 +18,9 @@ namespace AppointmentRules.Controllers
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> MakeTimeEntryAsync([FromBody] TimeEntryResponseDTO timeEntryResponseDTO)
+        public async Task<IActionResult> MakeTimeEntryAsync([FromBody] TimeEntryResponseDTO response)
         {
-            var command = new TimeEntryCommand(timeEntryResponseDTO);
+            var command = new TimeEntryCommand(response);
             var result = await _mediator.Send(command);
 
             if (!result)
