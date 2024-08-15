@@ -2,97 +2,42 @@
 using AppointmentRules.Models;
 using AppointmentRules.Service.DTOs;
 using AppointmentRules.Service.Interface;
-using Azure;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 public class RuleService : IRuleService
 {
     private readonly AppDbContext _context;
     private static readonly ConcurrentDictionary<string, Func<TimeEntry, bool>> _compiledRulesCache
         = new ConcurrentDictionary<string, Func<TimeEntry, bool>>();
+    private static readonly Lazy<string[]> _rules = new Lazy<string[]>(() => File.ReadAllLines("rules/rules.txt"));
 
     public RuleService(AppDbContext context)
     {
         _context = context;
     }
-    private bool? CompileAndExecuteRule(string rule, TimeEntry timeEntryComplile)
+
+    private Func<TimeEntry, bool> BuildRuleFunction(string rule)
     {
-        if (!_compiledRulesCache.TryGetValue(rule, out var compiledRule))
+        if (_compiledRulesCache.TryGetValue(rule, out var compiledRule))
         {
-            string code = $@"
-                using System;
-                using appointmentrules.models;
-
-                public class RuleEvaluator
-                {{
-                    public bool Evaluate(TimeEntry timeEntry)
-                    {{
-                        return {rule};
-                    }}
-                }}
-            ";
-
-            var syntaxTree = CSharpSyntaxTree.ParseText(code);
-
-            var assemblyName = Path.GetRandomFileName();
-            var references = new[]
-            {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(TimeEntryDTO).Assembly.Location)
-            };
-
-            var compilation = CSharpCompilation.Create(
-                assemblyName,
-                new[] { syntaxTree },
-                references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            using (var ms = new MemoryStream())
-            {
-                var result = compilation.Emit(ms);
-
-                if (!result.Success)
-                {
-                    return null;
-                }
-
-                ms.Seek(0, SeekOrigin.Begin);
-
-                var assembly = Assembly.Load(ms.ToArray());
-                var evaluatorType = assembly.GetType("RuleEvaluator");
-                var evaluator = Activator.CreateInstance(evaluatorType);
-                var method = evaluatorType.GetMethod("Evaluate");
-
-                compiledRule = (Func<TimeEntry, bool>)Delegate.CreateDelegate(typeof(Func<TimeEntryDTO, bool>), evaluator, method);
-                _compiledRulesCache.TryAdd(rule, compiledRule);
-            }
+            return compiledRule;
         }
-        return compiledRule(timeEntryComplile);
-    }
 
-    public async Task<List<TimeEntryDTO>> GetTimeEntriesByIdAsync(int memberId)
-    {
-        var timeEntries = await _context.TimeEntries
-            .AsNoTracking()
-            .Where(t => t.MemberId == memberId)
-            .Select(t => new TimeEntryDTO
-            {
-                MemberId = t.MemberId,
-                TaskId = t.TaskId,
-                Entry = t.StartTime,
-                Exit = t.EndTime,
-                IsApproved = t.IsApproved,
-                
-            })
-            .ToListAsync();
+        var parameter = Expression.Parameter(typeof(TimeEntry), "timeEntry");
 
-        return timeEntries;
+        var expression = DynamicExpressionParser.ParseLambda(new[] { parameter }, typeof(bool), rule);
+
+        compiledRule = (Func<TimeEntry, bool>)expression.Compile();
+        _compiledRulesCache.TryAdd(rule, compiledRule);
+
+        return compiledRule;
     }
 
     public async Task<TimeEntryDTO> ApplyRulesAsync(TimeEntryDTO timeEntryDto)
@@ -103,31 +48,24 @@ public class RuleService : IRuleService
             TaskId = timeEntryDto.TaskId,
             StartTime = timeEntryDto.Entry,
             EndTime = timeEntryDto.Exit,
-            IsApproved = timeEntryDto.IsApproved,
+            IsApproved = false
         };
 
-        var rules = await File.ReadAllTextAsync("rules/rules.txt");
+        var rules = _rules.Value;
+        bool isApproved = false;
 
-        foreach (var ruleline in rules.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var rule in rules)
         {
-            var rule = ruleline.Trim(); 
+            if (string.IsNullOrWhiteSpace(rule)) continue;
 
-            var result = CompileAndExecuteRule(rule, timeEntry);
-            if (result.HasValue)
+            var ruleFunction = BuildRuleFunction(rule.Trim());
+            if (ruleFunction(timeEntry))
             {
-                timeEntry.IsApproved = result.Value;
-
-                if(timeEntry.IsApproved == null)
-                {
-                    timeEntryDto.ApprovalMessage = "Not Approved";
-                }
-                else
-                {
-                    timeEntryDto.ApprovalMessage = "Approved";
-                }
+                isApproved = true;
                 break;
             }
         }
+
         _context.TimeEntries.Update(timeEntry);
         await _context.SaveChangesAsync();
 
@@ -147,6 +85,7 @@ public class RuleService : IRuleService
             TaskId = timeEntryResponseDto.TaskId,
             StartTime = timeEntryResponseDto.Entry,
             EndTime = timeEntryResponseDto.Exit,
+            IsApproved = false 
         };
 
         _context.TimeEntries.Add(timeEntry);
@@ -157,16 +96,27 @@ public class RuleService : IRuleService
             TaskId = timeEntry.TaskId,
             Entry = timeEntry.StartTime,
             Exit = timeEntry.EndTime,
-            IsApproved = timeEntry.IsApproved,
+            IsApproved = timeEntry.IsApproved
         };
 
         await ApplyRulesAsync(timeEntryDto);
-        await _context.SaveChangesAsync();
 
         return true;
     }
+    public async Task<List<TimeEntryDTO>> GetTimeEntriesByIdAsync(int memberId)
+    {
+        return await _context.TimeEntries
+            .AsNoTracking()
+            .Where(t => t.MemberId == memberId)
+            .Select(t => new TimeEntryDTO
+            {
+                MemberId = t.MemberId,
+                TaskId = t.TaskId,
+                Entry = t.StartTime,
+                Exit = t.EndTime,
+                IsApproved = t.IsApproved
+            })
+            .ToListAsync();
+    }
 
 }
-
-
-

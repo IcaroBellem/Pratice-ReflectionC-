@@ -146,3 +146,4 @@ C:\dev\AppointmentsAPI\AppointmentRules\obj\Debug\net8.0\AppointmentRules.pdb
 C:\dev\AppointmentsAPI\AppointmentRules\obj\Debug\net8.0\AppointmentRules.genruntimeconfig.cache
 C:\dev\AppointmentsAPI\AppointmentRules\obj\Debug\net8.0\ref\AppointmentRules.dll
 C:\dev\AppointmentsAPI\AppointmentRules\obj\Debug\net8.0\AppointmentRules.sourcelink.json
+C:\dev\AppointmentsAPI\AppointmentRules\bin\Debug\net8.0\System.Linq.Dynamic.Core.dll

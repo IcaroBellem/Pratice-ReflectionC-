@@ -9,7 +9,6 @@ namespace AppointmentRules.Service.DTOs
         public DateTime Entry { get; set; }
         public DateTime? Exit { get; set; }
         public bool IsApproved { get; set; }
-        public string ApprovalMessage { get; set; }
 
     }
 }

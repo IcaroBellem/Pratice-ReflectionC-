@@ -90,6 +90,10 @@
             "System.Collections.Concurrent": {
               "target": "Package",
               "version": "[4.3.0, )"
+            },
+            "System.Linq.Dynamic.Core": {
+              "target": "Package",
+              "version": "[1.4.4, )"
             }
           },
           "imports": [

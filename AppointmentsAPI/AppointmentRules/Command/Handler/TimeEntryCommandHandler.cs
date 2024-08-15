@@ -1,7 +1,5 @@
 ﻿using AppointmentRules.Command;
 using AppointmentRules.Data;
-using AppointmentRules.Models;
-using AppointmentRules.Service.DTOs;
 using AppointmentRules.Service.Interface;
 using MediatR;
 
@@ -25,15 +23,6 @@ public class TimeEntryHandler : IRequestHandler<TimeEntryCommand, bool>
         await _ruleService.MakeTimeEntryAsync(request.TimeEntryResponseDTO);
 
         return true;
-
-
-
-
-
-
-
-
-
 
     }
 }

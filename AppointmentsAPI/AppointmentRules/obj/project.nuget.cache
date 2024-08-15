@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "MvPi7T/sQ8SXBV457HNIgUX4T2XWRPBJflICH7VoEKBQHvohGtHRXuUFpw+Dz7s0I4saJ7Zqr8Vfyzu9s5GkZA==",
+  "dgSpecHash": "ULQNtdR6SN/nE4MmFz/alHeolZDNokvow91acxS3+NIa/OA7Qkt4qxfG4ZaTyEUWrGjbPySxN7yNlEg59ruKng==",
   "success": true,
   "projectFilePath": "C:\\dev\\AppointmentsAPI\\AppointmentRules\\AppointmentRules.csproj",
   "expectedPackageFiles": [
@@ -76,6 +76,7 @@
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.io\\4.3.0\\system.io.4.3.0.nupkg.sha512",
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.io.filesystem.accesscontrol\\5.0.0\\system.io.filesystem.accesscontrol.5.0.0.nupkg.sha512",
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.io.pipelines\\6.0.3\\system.io.pipelines.6.0.3.nupkg.sha512",
+    "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.linq.dynamic.core\\1.4.4\\system.linq.dynamic.core.1.4.4.nupkg.sha512",
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512",
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.memory.data\\1.0.2\\system.memory.data.1.0.2.nupkg.sha512",
     "C:\\Users\\icaro.bellem\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
